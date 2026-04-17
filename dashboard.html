@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SW-1 Alpha — Live Render Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0d0d1a;
+            --card: #13132a;
+            --border: #1e1e40;
+            --accent: #4ade80;
+            --warn: #facc15;
+            --error: #f87171;
+            --muted: #6b7280;
+            --text: #f1f5f9;
+            --h100: #818cf8;
+            --a100: #38bdf8;
+            --a6000: #fb923c;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        /* === Header === */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 32px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        .header-left h1 {
+            font-size: 26px;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+            background: linear-gradient(90deg, #4ade80, #38bdf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .header-left p { color: var(--muted); font-size: 13px; margin-top: 4px; }
+
+        .live-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #0f2a1a;
+            border: 1px solid #166534;
+            padding: 8px 16px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--accent);
+        }
+        .live-dot {
+            width: 8px; height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.8); }
+        }
+
+        /* === Summary Bar === */
+        .summary-bar {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+        }
+        .summary-card {
+            flex: 1;
+            min-width: 140px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px 20px;
+            text-align: center;
+        }
+        .summary-card .num {
+            font-size: 36px;
+            font-weight: 900;
+            line-height: 1;
+        }
+        .summary-card .label {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .num-running { color: var(--warn); }
+        .num-done { color: var(--accent); }
+        .num-error { color: var(--error); }
+        .num-total { color: var(--text); }
+
+        /* === Grid === */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 20px;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            border-radius: 14px 14px 0 0;
+        }
+        .card.running::before { background: linear-gradient(90deg, var(--warn), #f97316); }
+        .card.complete::before { background: linear-gradient(90deg, var(--accent), #22d3ee); }
+        .card.error::before { background: var(--error); }
+        .card.polling::before { background: var(--muted); }
+
+        .card.running { border-color: #3a3000; box-shadow: 0 0 20px #facc1510; }
+        .card.complete { border-color: #14532d; box-shadow: 0 0 20px #4ade8015; }
+        .card.error { border-color: #7f1d1d; box-shadow: 0 0 20px #f8717115; }
+
+        .card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 14px;
+        }
+        .variant-id {
+            font-size: 28px;
+            font-weight: 900;
+            line-height: 1;
+            color: var(--text);
+        }
+        .status-pill {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 999px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+        .pill-running { background: #422006; color: var(--warn); }
+        .pill-complete { background: #052e16; color: var(--accent); }
+        .pill-error { background: #450a0a; color: var(--error); }
+        .pill-default { background: #1e1e40; color: var(--muted); }
+
+        .style-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+        .gpu-badge {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 6px;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+        .gpu-H100 { background: #1e1b4b; color: var(--h100); }
+        .gpu-A100 { background: #0c2a3a; color: var(--a100); }
+        .gpu-A6000 { background: #2a1a0c; color: var(--a6000); }
+
+        .divider { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .info-label {
+            font-size: 11px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .info-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--text);
+        }
+
+        .last-log {
+            background: #0a0a1f;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-top: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--muted);
+            min-height: 36px;
+            word-break: break-all;
+        }
+
+        /* === Progress bar === */
+        .progress-wrap {
+            margin-top: 12px;
+        }
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+        .progress-track {
+            background: #1a1a30;
+            border-radius: 999px;
+            height: 6px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            border-radius: 999px;
+            transition: width 1s ease;
+        }
+        .bar-running { background: linear-gradient(90deg, #facc15, #f97316); }
+        .bar-complete { background: linear-gradient(90deg, #4ade80, #22d3ee); }
+        .bar-error { background: var(--error); }
+
+        /* === Footer === */
+        .footer {
+            margin-top: 32px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        #last-updated { font-family: 'JetBrains Mono', monospace; }
+
+        .spinner { display: inline-block; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="header-left">
+        <h1>🎬 SW-1 Alpha — Live Render Dashboard</h1>
+        <p>10 cinematic variants · Wan 2.2 · Parallel GPU fleet · Auto-refreshes every 10 seconds</p>
+    </div>
+    <div class="live-badge">
+        <div class="live-dot"></div>
+        LIVE
+    </div>
+</div>
+
+<div class="summary-bar">
+    <div class="summary-card">
+        <div class="num num-total" id="s-total">10</div>
+        <div class="label">Total</div>
+    </div>
+    <div class="summary-card">
+        <div class="num num-running" id="s-running">—</div>
+        <div class="label">Rendering</div>
+    </div>
+    <div class="summary-card">
+        <div class="num num-done" id="s-complete">—</div>
+        <div class="label">Complete</div>
+    </div>
+    <div class="summary-card">
+        <div class="num num-error" id="s-error">—</div>
+        <div class="label">Errors</div>
+    </div>
+</div>
+
+<div class="grid" id="grid">
+    <!-- Cards injected by JS -->
+    <div style="color:var(--muted);padding:40px;text-align:center;grid-column:1/-1;">
+        <div class="spinner">⟳</div> Connecting to dashboard server...
+    </div>
+</div>
+
+<div class="footer">
+    <span>SW-1 Alpha Production Pipeline · JarvisLabs GPU Fleet</span>
+    <span>Last updated: <span id="last-updated">—</span></span>
+</div>
+
+<script>
+const GPU_COLORS = { H100: 'H100', A100: 'A100', A6000: 'A6000' };
+
+// Estimated shots progress based on time running (rough calculation)
+// Wan 2.2 on H100 ≈ 2.5 min/shot, A100 ≈ 5 min/shot, A6000 ≈ 6 min/shot
+const START_TIMES = {
+    A: '2026-04-12T18:32:06Z', B: '2026-04-12T18:32:21Z',
+    C: '2026-04-12T18:38:45Z', D: '2026-04-12T18:39:00Z',
+    E: '2026-04-12T18:32:51Z', F: '2026-04-12T18:33:06Z',
+    G: '2026-04-12T18:40:23Z', H: '2026-04-12T18:39:30Z',
+    I: '2026-04-12T18:39:45Z', J: '2026-04-12T18:34:06Z',
+};
+const MINS_PER_SHOT = { H100: 2.5, A100: 5, A6000: 6 };
+const GPU_OF = {
+    A:'H100',B:'H100',E:'H100',F:'H100',J:'H100',
+    C:'A100',D:'A100',H:'A100',I:'A100',G:'A6000'
+};
+
+function estimateShot(variant) {
+    const gpu = GPU_OF[variant];
+    const mps = MINS_PER_SHOT[gpu];
+    const start = new Date(START_TIMES[variant]);
+    const elapsed = (Date.now() - start) / 60000; // minutes
+    const shot = Math.min(16, Math.floor(elapsed / mps));
+    const pct = Math.min(100, Math.round((elapsed / (16 * mps)) * 100));
+    return { shot, pct };
+}
+
+function pillClass(state) {
+    if (!state) return 'pill-default';
+    const s = state.toLowerCase();
+    if (s.includes('complete') || s === 'stopped') return 'pill-complete';
+    if (s.includes('error') || s.includes('failed')) return 'pill-error';
+    if (s.includes('run') || s.includes('polling')) return 'pill-running';
+    return 'pill-default';
+}
+
+function cardClass(state) {
+    if (!state) return 'polling';
+    const s = state.toLowerCase();
+    if (s.includes('complete') || s === 'stopped') return 'complete';
+    if (s.includes('error') || s.includes('failed')) return 'error';
+    return 'running';
+}
+
+function barClass(state) {
+    if (!state) return 'bar-running';
+    const s = state.toLowerCase();
+    if (s.includes('complete') || s === 'stopped') return 'bar-complete';
+    if (s.includes('error')) return 'bar-error';
+    return 'bar-running';
+}
+
+function renderCards(variants) {
+    const grid = document.getElementById('grid');
+    let running = 0, complete = 0, error = 0;
+
+    const order = ['A','B','E','F','J','C','D','H','I','G'];
+    grid.innerHTML = '';
+
+    order.forEach(v => {
+        const d = variants[v] || {};
+        const state = d.state || 'polling';
+        const { shot, pct } = estimateShot(v);
+
+        const stateLabel = state.includes('complete') || state === 'stopped'
+            ? '✓ COMPLETE'
+            : state.includes('error') ? '✗ ERROR'
+            : state.includes('polling') ? '⟳ POLLING'
+            : `⟳ RENDERING`;
+
+        if (state.includes('complete') || state === 'stopped') complete++;
+        else if (state.includes('error')) error++;
+        else running++;
+
+        const card = document.createElement('div');
+        card.className = `card ${cardClass(state)}`;
+        card.innerHTML = `
+            <div class="card-top">
+                <div class="variant-id">${v}</div>
+                <div class="status-pill ${pillClass(state)}">${stateLabel}</div>
+            </div>
+            <div class="style-name">
+                ${d.style || v}
+                <span class="gpu-badge gpu-${d.gpu || GPU_OF[v]}">${d.gpu || GPU_OF[v]}</span>
+            </div>
+            <hr class="divider">
+            <div class="info-row">
+                <span class="info-label">Run ID</span>
+                <span class="info-value">${d.run_id || '—'}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Cost</span>
+                <span class="info-value">${d.cost || '—'}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Updated</span>
+                <span class="info-value">${d.ts || '—'}</span>
+            </div>
+            <div class="progress-wrap">
+                <div class="progress-label">
+                    <span>Est. Shot ${shot}/16</span>
+                    <span>${pct}%</span>
+                </div>
+                <div class="progress-track">
+                    <div class="progress-bar ${barClass(state)}" style="width: ${pct}%"></div>
+                </div>
+            </div>
+            <div class="last-log">${d.last_log || 'Waiting for log data...'}</div>
+        `;
+        grid.appendChild(card);
+    });
+
+    document.getElementById('s-running').textContent = running;
+    document.getElementById('s-complete').textContent = complete;
+    document.getElementById('s-error').textContent = error;
+}
+
+async function refresh() {
+    try {
+        const r = await fetch('/status');
+        const data = await r.json();
+        renderCards(data.variants || {});
+        document.getElementById('last-updated').textContent = data.ts;
+    } catch (e) {
+        // Server not reachable yet — show estimated progress from local time calc
+        const fakeVariants = {};
+        ['A','B','C','D','E','F','G','H','I','J'].forEach(v => {
+            fakeVariants[v] = {
+                style: {A:'Standard Night',B:'Monsoon Storm',C:'Golden Hour Dawn',D:'Neon Cyberpunk',E:'Handheld Documentary',F:'Arctic Blizzard',G:'Desert Afternoon',H:'IMAX Documentary',I:'Film Noir B&W',J:'Anime Stylized'}[v],
+                gpu: GPU_OF[v], state: 'running', run_id: 'r_...', cost: '—', last_log: '⟳ Computing estimated progress...', ts: new Date().toLocaleTimeString()
+            };
+        });
+        renderCards(fakeVariants);
+        document.getElementById('last-updated').textContent = new Date().toLocaleTimeString() + ' (offline estimate)';
+    }
+}
+
+refresh();
+setInterval(refresh, 10000); // refresh every 10 seconds
+</script>
+</body>
+</html>

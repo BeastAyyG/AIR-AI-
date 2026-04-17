@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SW-1 Alpha Audio Generator (ElevenLabs Free)</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: #1a1a2e; 
+            color: #ffffff; 
+            max-width: 800px; 
+            margin: 40px auto; 
+            padding: 20px;
+        }
+        h1 { color: #4ade80; }
+        .script-box { 
+            background: #16213e; 
+            padding: 20px; 
+            border-radius: 8px; 
+            border: 1px solid #0f3460;
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        select, button {
+            padding: 12px 20px;
+            font-size: 16px;
+            margin-right: 10px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+        }
+        button {
+            background-color: #e94560;
+            color: white;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+        button:hover { background-color: #ff2e63; }
+        button:disabled { background-color: #53354a; color: #888; cursor: not-allowed; }
+        .controls { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+        #status { margin-top: 20px; color: #4ade80; font-weight: bold; }
+        audio { width: 100%; margin-top: 20px; display: none; }
+    </style>
+</head>
+<body>
+
+    <h1>🎙️ SW-1 Alpha — Voice Generator</h1>
+    <p>Powered by Puter.js (Zero-Cost ElevenLabs Integration)</p>
+
+    <div class="controls">
+        <label>Voice Mode:</label>
+        <select id="voiceId">
+            <option value="pNInz6obbfDQGcgMyIGD">Adam (Deep, Epic, Trustworthy)</option>
+            <option value="EXAVITQu4vr4xnSDxMaL">Bella (Soft, Calm, News Anchor)</option>
+            <option value="VR6AewLTigWG4xSOukaG">Rachel (Professional, Clear)</option>
+        </select>
+        
+        <button id="generateBtn">Generate & Play Voiceover</button>
+    </div>
+
+    <div class="script-box" id="scriptText">
+        In a medical emergency, every single second dictates the difference between life and death.
+        But in modern cities, gridlock holds our heroes hostage. And while patients wait... time runs out.
+        Until now.
+        Meet S W 1 Alpha. The autonomous medical lifeline. Built for instant payload deployment.
+        Alpha launches in under sixty seconds.
+        While traditional ambulances sit trapped in the concrete arteries below... Alpha flies above the chaos, charting a direct vector to the crisis.
+        Transmitting real-time patient vitals straight to the operating room, before they ever arrive.
+        With pinpoint automated landing, the cargo is instantly secured and extracted by the surgical team.
+        Bypassing the roads. Bypassing the delay. Delivering hope when the world stands still.
+        Cutting response times from thirty-four minutes, down to seven.
+        S W 1 Alpha. Because the sky... is the fastest road.
+    </div>
+
+    <div id="status"></div>
+    <audio id="audioPlayer" controls></audio>
+    <br>
+    <a id="downloadLink" href="#" style="display:none; color: #00d2ff; text-decoration: none; font-weight: bold; margin-top: 10px; display: inline-block;">⬇️ Download MP3 Voiceover</a>
+
+    <!-- Puter API Core -->
+    <script src="https://js.puter.com/v2/"></script>
+    <script>
+        const btn = document.getElementById('generateBtn');
+        const status = document.getElementById('status');
+        const audioPlayer = document.getElementById('audioPlayer');
+        const downloadLink = document.getElementById('downloadLink');
+
+        btn.addEventListener('click', async () => {
+            const textToSpeak = document.getElementById('scriptText').innerText;
+            const selectedVoice = document.getElementById('voiceId').value;
+
+            btn.disabled = true;
+            status.innerHTML = "⏳ Sending to ElevenLabs via Puter... (this may take 15-30 seconds for a long script)";
+            audioPlayer.style.display = "none";
+            downloadLink.style.display = "none";
+
+            try {
+                // ElevenLabs generation using puter
+                const audioObj = await puter.ai.txt2speech(textToSpeak, { 
+                    provider: "elevenlabs", 
+                    voice: selectedVoice, 
+                    model: "eleven_multilingual_v2" 
+                });
+
+                // Get object URL
+                const audioUrl = audioObj.toString();
+                
+                audioPlayer.src = audioUrl;
+                audioPlayer.style.display = "block";
+                
+                // Allow downloading the audio
+                downloadLink.href = audioUrl;
+                downloadLink.download = "SW1_Alpha_Voiceover.mp3";
+                downloadLink.style.display = "inline-block";
+
+                status.innerHTML = "✅ Voiceover Generated Successfully!";
+                audioPlayer.play();
+
+            } catch (error) {
+                status.innerHTML = "❌ Error: " + error.message;
+            }
+
+            btn.disabled = false;
+        });
+    </script>
+</body>
+</html>
