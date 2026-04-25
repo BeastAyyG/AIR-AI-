@@ -1,64 +1,50 @@
 # AIR-AI-
 
-# Text-to-Video Generation with JarvisLabs CLI
+> AI-powered autonomous drone inspection & reconnaissance system with real-time dashboard and log analysis
 
-I've set up a complete text-to-video pipeline using the state-of-the-art **CogVideoX-5b** model. This model creates incredibly high-quality videos from text prompts.
+![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white)
+![Status](https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square)
+![ArduPilot](https://img.shields.io/badge/ArduPilot-Integrated-blue?style=flat-square)
 
-I have created a dedicated folder containing the necessary files:
-1.  `generate_video.py`: The AI script that handles downloading the model and generating the video.
-2.  `requirements.txt`: The dependencies.
+## Overview
 
-Here is exactly how to run this on JarvisLabs via their CLI.
+AIR-AI is an AI-powered system for autonomous drone inspection and reconnaissance. It includes real-time telemetry monitoring, log analysis, flight variant calibration, and an automated emergency cleanup system.
 
-## Step 1: Open Your Terminal in the Project Folder
+## Features
 
-First, navigate to this folder:
+- Real-time drone dashboard (HTML/Python server)
+- Flight log analysis and variant checking
+- GPS coordinate calibration
+- Emergency cleanup automation
+- Text-to-Video generation via JarvisLabs CLI (CogVideoX-5b)
+- Remote MAVLink connection support
 
-```powershell
-cd "c:\log anyalysis\jarvis_video_gen"
+## Key Files
+
+| File | Purpose |
+|------|---------|
+| `dashboard_server.py` | Real-time monitoring server |
+| `check_logs.py` | Flight log analyzer |
+| `calibrate_coords.py` | GPS calibration tool |
+| `emergency_cleanup.py` | Auto emergency response |
+| `check_variants.py` | Drone variant checker |
+
+## Getting Started
+
+```bash
+git clone https://github.com/BeastAyyG/AIR-AI-.git
+cd AIR-AI-
+pip install -r requirements.txt
+python dashboard_server.py
 ```
 
-## Step 2: The Magic "One-Shot" Command
+## Tech Stack
 
-Since you have the `jl` CLI configured, you can launch a GPU, install requirements, and run the generation—all seamlessly. The A6000 or RTX6000Ada GPUs are perfect for this due to their high VRAM.
+- **Python** - Core system logic
+- **HTML/JS** - Dashboard frontend
+- **MAVLink** - Drone communication protocol
+- **ArduPilot** - Flight controller integration
 
-Run this command:
+## Author
 
-```powershell
-jl run generate_video.py --gpu A6000 --requirements requirements.txt -- --prompt "A cinematic shot of an astronaut riding a horse on Mars, professional cinematography, 4k resolution"
-```
-
-### What this command does:
-1.  **`jl run generate_video.py`**: Tells Jarvis to upload your current directory and run the Python script.
-2.  **`--gpu A6000`**: Provisions a powerful A6000 GPU instance automatically.
-3.  **`--requirements requirements.txt`**: Automatically sets up the virtual environment and installs video dependencies.
-4.  **`--`**: Separates CLI arguments from your Python script's arguments.
-5.  **`--prompt "..."`**: The customized text you want to turn into a video!
-
-## Step 3: Monitor the Logs
-
-Because `jl run` runs in the background, it will give you a `run_id`. You can watch the generation progress in real-time (downloading the model weights takes a couple of minutes the first time):
-
-```powershell
-jl run logs <your_run_id>
-```
-
-## Step 4: Download Your Video
-
-Once the logs print "✅ Video generation complete!", you can download your generated `output.mp4` to your PC. 
-
-```powershell
-# 1. Get your specific instance ID
-jl list
-
-# 2. Download the file from the instance to your local folder
-jl download <instance_id> /home/output.mp4 ./output.mp4
-```
-
-## Step 5: Clean Up
-
-**Do not forget to destroy the instance** once you have downloaded the video to stop billing!
-
-```powershell
-jl destroy <instance_id>
-```
+**BeastAyyG** - [GitHub](https://github.com/BeastAyyG)
